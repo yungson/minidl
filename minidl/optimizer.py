@@ -1,36 +1,41 @@
 import numpy as np
 
+class Optimizer:
 
-    
-class SGD:
+    def __init__(self, **kwargs):
+        pass
+
+    def step(self, grad):
+        raise NotImplementedError
+
+class SGD(Optimizer):
     
     def __init__(self, lr=0.01):
         self.lr = lr
     
-    def __call__(self, layer, t=None):
-        layer.weight = layer.weight - self.lr*layer.dW
-        layer.bias = layer.bias - self.lr*layer.db
-        return layer
+    def step(self, grad):
+        step = -self.lr*grad
+        return step
 
-class Adam:
-    
+class Adam(Optimizer):
+
+    # optimizer should be designed as not to store anything, it's just an optimization tool
     def __init__(self, lr = 0.001, beta1 = 0.9, beta2 = 0.999, epsilon = 1e-8):
         self.lr = lr
         self.beta1 = beta1
         self.beta2 = beta2
         self.epsilon = epsilon
-        
-    def __call__(self, layer, t):
-        layer.weight_v = self.beta1*layer.weight_v+(1-self.beta1)*layer.dW
-        layer.bias_v = self.beta1*layer.bias_v+(1-self.beta1)*layer.db
-        weight_v_corrected = layer.weight_v/(1-self.beta1**t)
-        bias_v_corrected = layer.bias_v/(1-self.beta1**t)
+
+    def step(self, weight):
+        # increasing the step
+        # computing v, s
+        weight.step += 1
+        weight.v = self.beta1*weight.v + (1-self.beta1)*weight.grad
+        weight.s = self.beta2*weight.s + (1-self.beta2)*(weight.grad**2)
         #correction
-        layer.weight_s = self.beta2*layer.weight_s+(1-self.beta2)*(layer.dW**2)
-        layer.bias_s = self.beta2*layer.bias_s+(1-self.beta2)*(layer.db**2)
-        weight_s_corrected = layer.weight_s/(1-self.beta2**t)
-        bias_s_corrected = layer.bias_s/(1-self.beta2**t)
-        
-        layer.weight -= self.lr*weight_v_corrected/(weight_s_corrected**0.5+self.epsilon)
-        layer.bias -= self.lr*bias_v_corrected/(bias_s_corrected**0.5+self.epsilon)
-        return layer
+        v_corrected = weight.v/(1-self.beta1**weight.step)
+        s_corrected = weight.s/(1-self.beta2**weight.step)
+
+        step = self.lr*v_corrected/(s_corrected**0.5+self.epsilon)
+        weight.value -= step
+        return weight
