@@ -1,5 +1,6 @@
 from urllib.request import urlretrieve
 import os
+import numpy as np
 
 def download(url, file_path):
     dirname = os.path.dirname(file_path)
@@ -14,3 +15,5 @@ def download(url, file_path):
     except Exception:
         raise RuntimeError("downloading data error")
         
+def to_onehot(y, label_num):
+    return np.eye(label_num)[y.astype(int)]
