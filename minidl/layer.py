@@ -1,37 +1,5 @@
 import numpy as np
 
-"""
-class Layer(Initializer):
-    def __init__(self, input_size, output_size, activation=sigmoid,activation_dt=sigmoid_dt, keep_prob=1):
-        self.input_size = input_size
-        self.output_size = output_size
-        self.activation = activation
-        self.activation_dt = activation_dt
-        self.keep_prob = keep_prob
-        self.weight = self.initialize((output_size, input_size), "he")
-        self.bias = self.initialize((output_size, 1), "zeros")
-        # moving average of past gradients
-        self.weight_v = self.initialize((output_size, input_size), "zeros")
-        self.bias_v = self.initialize((output_size, 1), "zeros")
-        # moving average of squared past gradients
-        self.weight_s = self.initialize((output_size, input_size), "zeros")
-        self.bias_s = self.initialize((output_size, 1), "zeros")
-
-    def forward(self, inputs):
-        self.inputs = inputs
-        self.z = np.dot(self.weight, inputs) + self.bias
-        self.a = self.activation(self.z)
-        self.m = (np.random.rand(*self.a.shape)<=self.keep_prob)
-        self.a = self.a/self.keep_prob
-        return self.a
-
-    def backward(self, dZ):
-        self.dZ = dZ
-        self.dW = np.dot(dZ, self.inputs.T)/self.inputs.shape[1]
-        self.db = np.sum(dZ, axis=1, keepdims=True)
-        return np.dot(self.weight.T, dZ)
-
-"""
 class Weight:
 
     def __init__(self, **kwargs):
@@ -44,7 +12,10 @@ class Weight:
         # moving average of past gradients, for Adam optimizer useage
         self.v = kwargs["v"] 
         # moving average of squared past gradients, for Adam optimizer useage
-        self.s = kwargs["s"]            
+        self.s = kwargs["s"]
+        ### For CNN
+        for k,v in kwargs.items():
+            setattr(self, k, v)
 
 
 class Layer():
@@ -71,8 +42,8 @@ class Layer():
 class Dense(Layer):
 
     def __init__(self, w, b):
-        self.w = Weight(value=w, v=0, s=0, step=0)
-        self.b = Weight(value=b, v=0, s=0, step=0)
+        self.w = Weight(value=w, grad=None, v=0, s=0, step=0)
+        self.b = Weight(value=b, grad=None, v=0, s=0, step=0)
 
     def forward(self, inputs):
         self.inputs = inputs
@@ -87,6 +58,25 @@ class Dense(Layer):
     def apply_grads(self, optimizer):
         self.w = optimizer.step(self.w)
         self.b = optimizer.step(self.b)
+
+
+class Conv2D(Layer):
+
+    def __init__(self, w, b, stride, pad):
+        """
+        fh: height of the filter, fw: width of the filter, in most cases fh=fw
+        w: weight, numpy array of shape=(fh, fw, in_channels, out_channels)
+        b: bias, numpy array of shape=(1, 1, 1, out_channels)
+        pad: padded arrary will become(height+2*pad, width+2*pad)
+        """
+        self.weight = Weight(value=w, grad=None, v=0, s=0, step=0, stride=stride, pad=pad)
+        self.bias = Weight(value=b, grad=None, v=0, s=0, step=0, stride=stride, pad=pad)
+
+    
+    def forward(self, inputs):
+        """Inputs are the previous activation output of shape=(?height, ?width, in_channels)
+        """
+        pass
 
 class Dropout(Layer):
 
@@ -119,6 +109,14 @@ class Activation(Layer):
     def backward(self, grad):
         return grad*self.compute_derivative(self.inputs)
 
+class Relu(Activation):
+
+    def compute(self, x):
+        return np.maximum(0,x)
+    
+    def compute_derivative(self, x):
+        return x>0
+
 class Sigmoid(Activation):
 
     def compute(self, x):
@@ -140,3 +138,11 @@ class Softmax(Activation):
 
     def compute_derivative(self, x):
         return 1 ##这个结果很意外
+
+class Tanh(Activation):
+
+    def compute(self, x):
+        return np.tanh(x)
+
+    def compute_derivative(self, x):
+        return 1 - np.power(np.tanh(x),2)
