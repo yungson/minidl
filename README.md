@@ -23,7 +23,7 @@ export PYTHONPATH=$PYTHONPATH:<the root directory of the downloaded repo>
 ## examples 
 
  **DNN**
-See [mnist](./examples/mnist/run_mnist.ipynb). 
+See [mnist](./examples/mnist/run_mnist.ipynb) for how to use this framework to build a handwritten digit classifier
 
 A simple network structure can achieve `train_accuracy: 0.9922333333333333, test_accuracy: 0.9763`. This is a good demostration that the framework is working correctly.
 
